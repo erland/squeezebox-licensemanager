@@ -1,0 +1,20 @@
+APPLET_LICENSEMANAGER
+	EN	License Manager
+
+APPLET_LICENSEMANAGER_ACCOUNT_ID
+	EN	Your account identity is:
+
+APPLET_LICENSEMANAGER_UNKNOWN_ACCOUNT_ID
+	EN	Unable to get account identity, you have to register a mysqueezebox.com account
+
+APPLET_LICENSEMANAGER_LICENSED
+	EN	Licensed
+
+APPLET_LICENSEMANAGER_LICENSE_REQUIRED
+	EN	License required
+
+APPLET_LICENSEMANAGER_CONTACT_DEVELOPER
+	EN	Contact developer of this applet for more information
+
+APPLET_LICENSEMANAGER_REFRESH_LICENSES
+	EN	Refresh
