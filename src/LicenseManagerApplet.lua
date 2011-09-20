@@ -350,7 +350,7 @@ function loadAccountIdFromSqueezeboxServer(self,server,player)
 	server:userRequest(function(chunk,err)
 		if err then
 			log:warn(err)
-		else
+		elseif not string.find(tostring(chunk.data._p2),"^userdata",1) then
 			local accountId=tostring(chunk.data._p2)
 			log:info("Got accountId="..accountId.." from "..server['name'])
 			self:getSettings()["accountId"] = self:createAccountId(accountId)
