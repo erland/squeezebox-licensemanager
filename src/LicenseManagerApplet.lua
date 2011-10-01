@@ -83,7 +83,7 @@ function licenseManagerMenu(self,transiton)
 
 	local accountId = self:getSettings()["accountId"]
 	if accountId then
-		menu:setHeaderWidget(Textarea("help_text", tostring(self:string("APPLET_LICENSEMANAGER_ACCOUNT_ID")).."\n"..accountId))
+		menu:setHeaderWidget(Textarea("help_text", tostring(self:string("APPLET_LICENSEMANAGER_ACCOUNT_ID")).."\n"..accountId.."\n"..tostring(self:string("APPLET_LICENSEMANAGER_LICENSE_REFRESH"))))
 	else
 		menu:setHeaderWidget(Textarea("help_text", tostring(self:string("APPLET_LICENSEMANAGER_UNKNOWN_ACCOUNT_ID"))))
 	end
