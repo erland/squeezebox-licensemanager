@@ -168,7 +168,6 @@ function registerLicensedApplet(self,appletId,appletVersion,licenseHelp)
 	else
 		licensedApplets[appletId].licenseHelp = licenseHelp
 	end
-	self:storeSettings()
 end
 
 function isLicensedApplet(self,appletId,appletVersion)
@@ -211,9 +210,6 @@ function validateLicense(self,appletId,appletVersion)
 				local date = dateFromString(licensedApplets[appletId].date)
 				if current<date then
 					return true
-				else
-					licensedApplets[appletId].nextcheck = current + (3600*24)
-					self:storeSettings()
 				end
 			end
 		end
@@ -272,10 +268,14 @@ function retrieveLicense(self,appletId,appletVersion)
 						checksum = result,
 						licenseHelp = licenseHelp
 					}
-					self:storeSettings()
 
 					if self:validateLicense(appletId,appletVersion) then
+						self:storeSettings()
 						jnt:notify("licenseChanged",appletId)
+					else
+						local current = os.time()
+						licensedApplets[appletId].nextcheck = current + (3600*24)
+						self:storeSettings()
 					end
 				end
 			end,
