@@ -82,6 +82,11 @@ function licenseManagerMenu(self,transiton)
 	local licensedApplets = self:getSettings()["licenses"]
 
 	local accountId = self:getSettings()["accountId"]
+	if not accountId then
+		for _,server in appletManager:callService("iterateSqueezeCenters") do
+			self:notify_serverConnected(server)
+		end
+	end
 	if accountId then
 		menu:setHeaderWidget(Textarea("help_text", tostring(self:string("APPLET_LICENSEMANAGER_ACCOUNT_ID")).."\n"..accountId.."\n"..tostring(self:string("APPLET_LICENSEMANAGER_LICENSE_REFRESH"))))
 	else
@@ -109,11 +114,17 @@ function licenseManagerMenu(self,transiton)
 		end
 	end
 
-	if menu:numItems() > 0 then
-		menu:addItem(
-			{
-				text = self:string("APPLET_LICENSEMANAGER_REFRESH_LICENSES"),
-				callback = function(object, menuItem)
+	menu:addItem(
+		{
+			text = self:string("APPLET_LICENSEMANAGER_REFRESH_LICENSES"),
+			callback = function(object, menuItem)
+				local accountId = self:getSettings()["accountId"]
+				if not accountId then
+					for _,server in appletManager:callService("iterateSqueezeCenters") do
+						self:notify_serverConnected(server)
+					end
+				end
+				if accountId then
 					local licensedApplets = self:getSettings()["licenses"]
 					for appletId,data in pairs(licensedApplets) do
 						licensedApplets[appletId].date = nil
@@ -123,13 +134,13 @@ function licenseManagerMenu(self,transiton)
 					for appletId in ipairs(licensedApplets) do
 						self:isLicensedApplet(appletId,licensedApplets[appletId].version)
 					end
-					self.window:hide()
-					self:licenseManagerMenu()
-					return EVENT_CONSUME
-				end,
-			}
-		)
-	end
+				end
+				self.window:hide()
+				self:licenseManagerMenu()
+				return EVENT_CONSUME
+			end,
+		}
+	)
 
 	self.window:addWidget(menu)
 	self:tieAndShowWindow(self.window)
@@ -328,15 +339,61 @@ function loadAccountIdFromSqueezeNetwork(self,server,player)
 		log:debug("Getting account id from: ".. server['name'])
 		server:userRequest(function(chunk,err)
 				if err then
+					log:warn("Couldn't get account id from: "..server['name'].." using primary method")
 					log:warn(err)
 				else
-					local accountId = chunk.data.window.textarea
-					accountId = string.sub(accountId,string.find(accountId,"%S+@%S+",1))
-					accountId = string.gsub(accountId,"[%.,]$","")
-					log:info("Got accountId="..accountId.." from "..server['name'])
-					self:getSettings()["accountId"] = self:createAccountId(accountId)
-					self:storeSettings()
-					self:validateBacklog()
+					if chunk.data.window then
+						local accountId = chunk.data.window.textarea
+						accountId = string.sub(accountId,string.find(accountId,"%S+@%S+",1))
+						accountId = string.gsub(accountId,"[%.,]$","")
+						log:info("Got accountId="..accountId.." from "..server['name'])
+						self:getSettings()["accountId"] = self:createAccountId(accountId)
+						self:storeSettings()
+						self:validateBacklog()
+					else
+						log:debug("Couldn't get account id from: "..server['name'].." using primary method")
+						server:userRequest(function(chunk,err)
+								if err then
+									log:warn(err)
+								else
+									log:debug("Parsing result from first level systeminfo command")
+									debug.dump(chunk.data)
+									if chunk.data.loop_loop and chunk.data.loop_loop[1] and chunk.data.loop_loop[1].id then
+										server:userRequest(function(chunk,err)
+												if err then
+													log:warn("Couldn't get account id from: "..server['name'].." using secondary method")
+													log:warn(err)
+												else
+													log:debug("Parsing result from second level systeminfo command")
+													for id,item in pairs(chunk.data.loop_loop) do
+														if item.name and string.find(item.name,"@",1) then
+															if not self:getSettings()["accountId"] then
+																local accountId = string.sub(item.name,string.find(item.name,"%S+@%S+",1))
+																accountId = string.gsub(accountId,"[%.,]$","")
+																log:info("Got accountId="..accountId.." from "..server['name'])
+																self:getSettings()["accountId"] = self:createAccountId(accountId)
+																self:storeSettings()
+																self:validateBacklog()
+															end
+														end
+													end
+													if not self:getSettings()["accountId"] then
+														log:warn("Couldn't get account id from: "..server['name'].." using secondary method")
+													end
+												end
+											end,
+											player:getId(),
+											{'systeminfo','items',0,200,'item_id:'..chunk.data.loop_loop[1].id}
+										)
+									else
+										log:warn("Couldn't get account id from: "..server['name'].." using secondary method")
+									end
+								end
+							end,
+							player:getId(),
+							{'systeminfo','items',0,1}
+						)
+					end
 				end
 			end,
 			player:getId(),
